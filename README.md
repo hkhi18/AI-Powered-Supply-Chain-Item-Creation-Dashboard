@@ -1,33 +1,32 @@
-# AI-Powered Supply Chain Item Creation Dashboard
+# SCM Item Creation · إنشاء الأصناف بالذكاء الاصطناعي
 
-An intelligent web application designed to streamline Supply Chain Management (SCM) item master creation through an AI-powered chatbot and structured dashboard.
+Dashboard + AI chatbot for creating item-master records classified with **UNSPSC v26.0801**.
+Same stack, CSS and chatbot design as *Smart Medicine Inventory* (Next.js 16, PostgreSQL/PGlite, floating ChatWidget, Gemini tool-calling).
 
-### Key Features
-- **AI Chatbot:** Creates structured item records from natural-language descriptions in Arabic and English.
-- **UNSPSC Classification:** Searches a database of 71,924 goods codes to identify appropriate item classifications.
-- **Standardized Descriptions:** Generates uppercase, standardized item descriptions with the noun first.
-- **Duplicate Detection:** Checks item descriptions and manufacturer part numbers to prevent duplicate records.
-- **Draft Approval Workflow:** Saves proposed items as drafts for reviewer approval or rejection.
-- **Dashboard Analytics:** Displays KPIs, item statistics, UNSPSC segment charts, and recent activity.
-- **Manual Item Creation:** Provides a searchable UNSPSC picker for manual entry.
-- **Excel Export:** Exports item records for reporting and further analysis.
+## Run · التشغيل
+1. Copy `.env.example` to `.env.local` and paste your `GEMINI_API_KEY`.
+2. Double-click `1-Setup-Database.bat` once (npm install + loads 71,924 UNSPSC goods codes).
+3. Double-click `2-Start-Website.bat` → http://localhost:3002
 
-### Technology Stack
-- Next.js 16
-- React
-- PostgreSQL / PGlite
-- Gemini AI
-- UNSPSC Classification
-- Plotly
-- Excel Export
+Development: `npm install` · `npm run seed` · `npm run dev`
 
-### Workflow
-1. Describe an item in Arabic or English.
-2. Generate a standardized item description.
-3. Search and validate its UNSPSC classification.
-4. Check for duplicate records.
-5. Review the proposed item.
-6. Save as a draft for approval.
+## How the chatbot works · كيف يعمل المساعد
+`app/api/chat` → `lib/gemini.js` (tool-calling loop) → `lib/chatTools.js`
+| Tool | What it does |
+|---|---|
+| `search_unspsc` | SQL word-match over the UNSPSC table; the model never invents codes |
+| `find_similar_items` | duplicate check (Jaccard on description, exact part number) |
+| `create_item_draft` | validates code, UOM and duplicates, then inserts a **draft** |
+| `get_summary` | counts for the dashboard |
 
-### Important
-The current version does not include authentication or role-based access control. It should not be exposed publicly until appropriate access controls are implemented.
+The assistant can only create drafts. Approve / reject is a human action on `/items/[id]` and is written to `audit_log`.
+
+## Pages · الصفحات
+`/` dashboard · `/items` list + Excel export · `/items/[id]` detail + review · `/new` manual form with UNSPSC picker
+
+## Data
+`data/unspsc.csv.gz` = goods commodities (segments 10–60) from `unspsc-english-v260801`, 71,924 rows. Services segments (70+) are left out on purpose.
+Two example items (nasogastric tubes) come from the KFSHRC item sample. Everything else is created by users.
+
+## Not included yet
+Login / roles (the original app has them), Oracle ERP push, UNSPSC browser page.
